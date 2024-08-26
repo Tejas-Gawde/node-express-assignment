@@ -10,10 +10,10 @@ const School = require('../models/school');
  */
 router.get('/', (req, res) => {
   try {
-    res.json({ message: 'Welcome to the School Finder API' });
+    res.json({ status: 'success', message: 'Welcome to the School Finder API' });
   } catch (error) {
     console.error('Error on landing route:', error);
-    res.status(500).json({ error: 'An error occurred while processing the request' });
+    res.status(500).json({ status: 'error', error: 'An error occurred while processing the request' });
   }
 });
 
@@ -33,15 +33,15 @@ router.post('/addSchool', async (req, res) => {
 
     // Check if the request body is empty
     if (!name || !address || !latitude || !longitude) {
-      return res.status(400).json({ error: 'All fields (name, address, latitude, longitude) are required' });
+      return res.status(400).json({ status: 'error', error: 'All fields (name, address, latitude, longitude) are required' });
     }
 
     // Validate input types
     if (typeof name !== 'string' || typeof address !== 'string') {
-      return res.status(400).json({ error: 'Name and address must be strings' });
+      return res.status(400).json({ status: 'error', error: 'Name and address must be strings' });
     }
     if (isNaN(latitude) || isNaN(longitude)) {
-      return res.status(400).json({ error: 'Latitude and longitude must be numbers' });
+      return res.status(400).json({ status: 'error', error: 'Latitude and longitude must be numbers' });
     }
 
     // Convert latitude and longitude to floats
@@ -50,20 +50,20 @@ router.post('/addSchool', async (req, res) => {
 
     // Validate geographical limits
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-      return res.status(400).json({ error: 'Latitude and longitude must be within valid ranges' });
+      return res.status(400).json({ status: 'error', error: 'Latitude and longitude must be within valid ranges' });
     }
 
     // Attempt to create a new school entry
     const schoolInfo = await School.create(name, address, lat, lon);
-    res.status(201).json({ message: 'School added successfully', schoolInfo });
+    res.status(201).json({ status: 'success', message: 'School added successfully', schoolInfo });
   } catch (error) {
     console.error('Error adding school:', error);
     if (error.code === 'ER_DUP_ENTRY') {
-      res.status(409).json({ error: 'School with the same name already exists' });
+      res.status(409).json({ status: 'error', error: 'School with the same name already exists' });
     } else if (error.code === 'ER_BAD_FIELD_ERROR') {
-      res.status(400).json({ error: 'Invalid fields or data format' });
+      res.status(400).json({ status: 'error', error: 'Invalid fields or data format' });
     } else {
-      res.status(500).json({ error: 'An error occurred while adding the school' });
+      res.status(500).json({ status: 'error', error: 'An error occurred while adding the school' });
     }
   }
 });
@@ -82,10 +82,10 @@ router.get('/listSchools', async (req, res) => {
 
     // Validate input
     if (!latitude || !longitude) {
-      return res.status(400).json({ error: 'Latitude and longitude are required' });
+      return res.status(400).json({ status: 'error', error: 'Latitude and longitude are required' });
     }
     if (isNaN(latitude) || isNaN(longitude)) {
-      return res.status(400).json({ error: 'Latitude and longitude must be numbers' });
+      return res.status(400).json({ status: 'error', error: 'Latitude and longitude must be numbers' });
     }
 
     // Convert latitude and longitude to floats
@@ -94,15 +94,15 @@ router.get('/listSchools', async (req, res) => {
 
     // Validate geographical limits
     if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
-      return res.status(400).json({ error: 'Latitude and longitude must be within valid ranges' });
+      return res.status(400).json({ status: 'error', error: 'Latitude and longitude must be within valid ranges' });
     }
 
     // Attempt to fetch and sort schools by proximity
     const schools = await School.findAllSortedByProximity(lat, lon);
-    res.json(schools);
+    res.json({ status: 'success', data: schools });
   } catch (error) {
     console.error('Error fetching schools:', error);
-    res.status(500).json({ error: 'An error occurred while fetching schools' });
+    res.status(500).json({ status: 'error', error: 'An error occurred while fetching schools' });
   }
 });
 
