@@ -2,6 +2,21 @@ const express = require('express');
 const router = express.Router();
 const School = require('../models/school');
 
+
+/**
+ * @route Get /
+ * @description Landing point of the API
+ * @access Public
+ * @returns {object} - Welcome message
+ */
+router.get('/', (req, res) => {
+  try {
+    res.json({ message: 'Welcome to the School Finder API' });
+  } catch (error) {
+    res.status(500).json({ error: 'An error occurred while fetching schools' });
+  }
+});
+
 /**
  * @route POST /addSchool
  * @description Add a new school to the database
