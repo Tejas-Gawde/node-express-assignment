@@ -2,9 +2,8 @@ const express = require('express');
 const router = express.Router();
 const School = require('../models/school');
 
-
 /**
- * @route Get /
+ * @route GET /
  * @description Landing point of the API
  * @access Public
  * @returns {object} - Welcome message
@@ -13,7 +12,8 @@ router.get('/', (req, res) => {
   try {
     res.json({ message: 'Welcome to the School Finder API' });
   } catch (error) {
-    res.status(500).json({ error: 'An error occurred while fetching schools' });
+    console.error('Error on landing route:', error);
+    res.status(500).json({ error: 'An error occurred while processing the request' });
   }
 });
 
@@ -25,15 +25,20 @@ router.get('/', (req, res) => {
  * @param {string} address - The address of the school
  * @param {number} latitude - The latitude of the school location
  * @param {number} longitude - The longitude of the school location
- * @returns {object} - Success message and school ID or error details
+ * @returns {object} - Success message and school object or error details
  */
 router.post('/addSchool', async (req, res) => {
   try {
     const { name, address, latitude, longitude } = req.body;
 
-    // Validate input
+    // Check if the request body is empty
     if (!name || !address || !latitude || !longitude) {
-      return res.status(400).json({ error: 'All fields are required' });
+      return res.status(400).json({ error: 'All fields (name, address, latitude, longitude) are required' });
+    }
+
+    // Validate input types
+    if (typeof name !== 'string' || typeof address !== 'string') {
+      return res.status(400).json({ error: 'Name and address must be strings' });
     }
     if (isNaN(latitude) || isNaN(longitude)) {
       return res.status(400).json({ error: 'Latitude and longitude must be numbers' });
@@ -43,12 +48,23 @@ router.post('/addSchool', async (req, res) => {
     const lat = parseFloat(latitude);
     const lon = parseFloat(longitude);
 
+    // Validate geographical limits
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      return res.status(400).json({ error: 'Latitude and longitude must be within valid ranges' });
+    }
+
     // Attempt to create a new school entry
-    const schoolId = await School.create(name, address, lat, lon);
+    const schoolInfo = await School.create(name, address, lat, lon);
     res.status(201).json({ message: 'School added successfully', schoolInfo });
   } catch (error) {
     console.error('Error adding school:', error);
-    res.status(500).json({ error: 'An error occurred while adding the school' });
+    if (error.code === 'ER_DUP_ENTRY') {
+      res.status(409).json({ error: 'School with the same name already exists' });
+    } else if (error.code === 'ER_BAD_FIELD_ERROR') {
+      res.status(400).json({ error: 'Invalid fields or data format' });
+    } else {
+      res.status(500).json({ error: 'An error occurred while adding the school' });
+    }
   }
 });
 
@@ -75,6 +91,11 @@ router.get('/listSchools', async (req, res) => {
     // Convert latitude and longitude to floats
     const lat = parseFloat(latitude);
     const lon = parseFloat(longitude);
+
+    // Validate geographical limits
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      return res.status(400).json({ error: 'Latitude and longitude must be within valid ranges' });
+    }
 
     // Attempt to fetch and sort schools by proximity
     const schools = await School.findAllSortedByProximity(lat, lon);
