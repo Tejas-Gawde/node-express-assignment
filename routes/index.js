@@ -45,7 +45,7 @@ router.post('/addSchool', async (req, res) => {
 
     // Attempt to create a new school entry
     const schoolId = await School.create(name, address, lat, lon);
-    res.status(201).json({ message: 'School added successfully', schoolId });
+    res.status(201).json({ message: 'School added successfully', schoolInfo });
   } catch (error) {
     console.error('Error adding school:', error);
     res.status(500).json({ error: 'An error occurred while adding the school' });

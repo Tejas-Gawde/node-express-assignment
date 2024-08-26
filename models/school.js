@@ -11,15 +11,24 @@ class School {
      * @param {string} address - The address of the school
      * @param {number} latitude - The latitude coordinate of the school
      * @param {number} longitude - The longitude coordinate of the school
-     * @returns {Promise<number>} The ID of the newly created school
+     * @returns {Promise<Object>} The newly created school object
      */
     static async create(name, address, latitude, longitude) {
         try {
+            // Insert the new school into the database
             const [result] = await db.execute(
                 'INSERT INTO school (name, address, latitude, longitude) VALUES (?, ?, ?, ?)',
                 [name, address, latitude, longitude]
             );
-            return result.insertId;
+
+            // Retrieve the newly inserted school
+            const [rows] = await db.query(
+                'SELECT * FROM school WHERE id = ?',
+                [result.insertId]
+            );
+
+            // Return the newly inserted school
+            return rows[0];
         } catch (error) {
             console.error('Error creating school:', error);
             throw error;
